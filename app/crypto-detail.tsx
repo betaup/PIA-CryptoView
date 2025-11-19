@@ -1,20 +1,22 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
+import { fetchWithBackoff } from '@/utils/api-client';
 import { formatPercentage, formatPrice } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 interface CoinDetail {
   id: string;
@@ -29,17 +31,89 @@ interface CoinDetail {
     high_24h: { [key: string]: number };
     low_24h: { [key: string]: number };
     market_cap: { [key: string]: number };
+    market_cap_rank: number;
     total_volume: { [key: string]: number };
+    circulating_supply: number;
+    total_supply: number;
+    max_supply: number;
+    sparkline_7d?: {
+      price: number[];
+    };
   };
   description: { en: string };
 }
 
 type Currency = 'usd' | 'mxn' | 'eur';
+type ChartInterval = '1H' | '1D' | '1S' | '1M';
+
+const { width } = Dimensions.get('window');
+
+// Componente de gráfico de línea
+const PriceChart = ({
+  data,
+  isPositive
+}: {
+  data: number[];
+  isPositive: boolean;
+}) => {
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const chartHeight = 200;
+  const chartWidth = width - 32;
+  const minPrice = Math.min(...data);
+  const maxPrice = Math.max(...data);
+  const priceRange = maxPrice - minPrice || 1;
+
+  const points = data.map((price, index) => {
+    const x = (index / (data.length - 1)) * chartWidth;
+    const y = chartHeight - ((price - minPrice) / priceRange) * (chartHeight - 40) + 20;
+    return { x, y };
+  });
+
+  const pathData = points.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`
+  ).join(' ');
+
+  const fillPath = `${pathData} L ${chartWidth},${chartHeight} L 0,${chartHeight} Z`;
+
+  return (
+    <Svg width={chartWidth} height={chartHeight} style={styles.chart}>
+      <Defs>
+        <LinearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+          <Stop
+            offset="0%"
+            stopColor={isPositive ? '#4CAF50' : '#F44336'}
+            stopOpacity="0.3"
+          />
+          <Stop
+            offset="100%"
+            stopColor={isPositive ? '#4CAF50' : '#F44336'}
+            stopOpacity="0"
+          />
+        </LinearGradient>
+      </Defs>
+      <Path
+        d={fillPath}
+        fill="url(#gradient)"
+      />
+      <Path
+        d={pathData}
+        fill="none"
+        stroke={isPositive ? '#4CAF50' : '#F44336'}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+};
 
 export default function CryptoDetailScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = Colors[colorScheme ?? 'light'];
   const { toggleFavorite, isFavorite } = useFavorites();
@@ -52,25 +126,25 @@ export default function CryptoDetailScreen() {
   const [coinDetail, setCoinDetail] = useState<CoinDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<'24h' | '7d' | '30d'>('24h');
+  const [selectedInterval, setSelectedInterval] = useState<ChartInterval>('1D');
+  const [chartData, setChartData] = useState<number[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
 
   useEffect(() => {
     fetchCoinDetail();
   }, [coinId]);
 
+  useEffect(() => {
+    fetchChartData(selectedInterval);
+  }, [coinId, selectedInterval, currency]);
+
   const fetchCoinDetail = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
+      const data = await fetchWithBackoff(
+        `/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`
       );
-
-      if (!response.ok) {
-        throw new Error('Error al obtener los datos');
-      }
-
-      const data = await response.json();
       setCoinDetail(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -80,22 +154,55 @@ export default function CryptoDetailScreen() {
     }
   };
 
-  const getPriceChange = () => {
-    if (!coinDetail) return 0;
-    switch (selectedPeriod) {
-      case '24h':
-        return coinDetail.market_data.price_change_percentage_24h;
-      case '7d':
-        return coinDetail.market_data.price_change_percentage_7d;
-      case '30d':
-        return coinDetail.market_data.price_change_percentage_30d;
-      default:
-        return 0;
+  const fetchChartData = async (interval: ChartInterval) => {
+    try {
+      setChartLoading(true);
+      let days = '1';
+      switch (interval) {
+        case '1H':
+          days = '1';
+          break;
+        case '1D':
+          days = '1';
+          break;
+        case '1S':
+          days = '7';
+          break;
+        case '1M':
+          days = '30';
+          break;
+      }
+
+      const data = await fetchWithBackoff(
+        `/coins/${coinId}/market_chart?vs_currency=${currency}&days=${days}`
+      );
+
+      let prices = data.prices.map((item: [number, number]) => item[1]);
+
+      if (interval === '1H') {
+        const oneHourPoints = Math.floor(prices.length / 24);
+        prices = prices.slice(-oneHourPoints || -12);
+      }
+
+      setChartData(prices);
+    } catch (err) {
+      console.error('Error fetching chart data:', err);
+      if (interval === '1S' && coinDetail?.market_data.sparkline_7d?.price) {
+        setChartData(coinDetail.market_data.sparkline_7d.price);
+      }
+    } finally {
+      setChartLoading(false);
     }
   };
 
-  const priceChange = getPriceChange();
-  const isPositive = priceChange >= 0;
+  const priceChange24h = coinDetail?.market_data.price_change_percentage_24h || 0;
+  // Calcular cambio para el intervalo seleccionado si es posible, por ahora usamos 24h para color base
+  // pero idealmente calcularíamos el cambio del gráfico.
+  const chartIsPositive = chartData.length > 0
+    ? chartData[chartData.length - 1] >= chartData[0]
+    : priceChange24h >= 0;
+
+  const isPositive = priceChange24h >= 0;
   const favorite = isFavorite(coinId);
 
   if (loading) {
@@ -150,28 +257,27 @@ export default function CryptoDetailScreen() {
   }
 
   const currentPrice = coinDetail.market_data.current_price[currency] || 0;
-  const high24h = coinDetail.market_data.high_24h[currency] || 0;
-  const low24h = coinDetail.market_data.low_24h[currency] || 0;
   const marketCap = coinDetail.market_data.market_cap[currency] || 0;
   const volume = coinDetail.market_data.total_volume[currency] || 0;
+  const marketCapRank = coinDetail.market_data.market_cap_rank || 0;
+  const maxSupply = coinDetail.market_data.max_supply || 0;
+
+  const intervals: ChartInterval[] = ['1H', '1D', '1S', '1M'];
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? '#333' : 'rgba(0,0,0,0.1)' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          {coinDetail.image?.large && (
-            <Image
-              source={{ uri: coinDetail.image.large }}
-              style={styles.coinIcon}
-            />
-          )}
+        <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {coinDetail.name}
+            {coinDetail.symbol.toUpperCase()}
+          </Text>
+          <Text style={[styles.headerRank, { color: colors.icon }]}>
+            #{marketCapRank}
           </Text>
         </View>
         <TouchableOpacity
@@ -190,79 +296,71 @@ export default function CryptoDetailScreen() {
         showsVerticalScrollIndicator={false}>
         {/* Precio y Cambio */}
         <View style={styles.priceSection}>
-          <Text style={[styles.symbolText, { color: colors.icon }]}>
-            {coinDetail.symbol.toUpperCase()} / {currency.toUpperCase()}
-          </Text>
           <Text style={[styles.priceText, { color: colors.text }]}>
             {formatPrice(currentPrice, currency)}
           </Text>
           <View style={styles.priceChangeRow}>
-            <View
+            <Text
               style={[
-                styles.priceChangeBadge,
-                {
-                  backgroundColor: isPositive
-                    ? 'rgba(76, 175, 80, 0.15)'
-                    : 'rgba(244, 67, 54, 0.15)',
-                },
+                styles.priceChangeText,
+                { color: isPositive ? '#4CAF50' : '#F44336' },
               ]}>
-              <Ionicons
-                name={isPositive ? 'trending-up' : 'trending-down'}
-                size={18}
-                color={isPositive ? '#4CAF50' : '#F44336'}
-              />
-              <Text
-                style={[
-                  styles.priceChangeText,
-                  { color: isPositive ? '#4CAF50' : '#F44336' },
-                ]}>
-                {formatPercentage(priceChange)}
-              </Text>
-            </View>
+              {formatPercentage(priceChange24h)} (24h)
+            </Text>
           </View>
         </View>
 
-        {/* Selector de Período */}
-        <View style={styles.periodSelector}>
-          {(['24h', '7d', '30d'] as const).map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodButton,
-                {
-                  backgroundColor:
-                    selectedPeriod === period
-                      ? colors.tint
-                      : isDark
-                        ? 'rgba(255, 255, 255, 0.1)'
-                        : 'rgba(0, 0, 0, 0.05)',
-                  borderWidth: selectedPeriod === period ? 2 : 1,
-                  borderColor:
-                    selectedPeriod === period
-                      ? colors.tint
-                      : isDark
-                        ? 'rgba(255, 255, 255, 0.2)'
-                        : 'rgba(0, 0, 0, 0.1)',
-                },
-              ]}
-              onPress={() => setSelectedPeriod(period)}>
-              <Text
-                style={[
-                  styles.periodButtonText,
-                  {
-                    color:
-                      selectedPeriod === period
-                        ? '#FFFFFF'
-                        : isDark
-                          ? '#FFFFFF'
-                          : colors.text,
-                    fontWeight: selectedPeriod === period ? '700' : '500',
-                  },
-                ]}>
-                {period}
+        {/* Gráfico */}
+        <View style={styles.chartContainer}>
+          {chartLoading ? (
+            <View style={[styles.chartPlaceholder, { backgroundColor: 'transparent' }]}>
+              <ActivityIndicator size="small" color={colors.tint} />
+            </View>
+          ) : chartData.length > 0 ? (
+            <View style={styles.chartWrapper}>
+              <PriceChart data={chartData} isPositive={chartIsPositive} />
+            </View>
+          ) : (
+            <View style={[styles.chartPlaceholder, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>
+              <Ionicons name="bar-chart" size={64} color={colors.icon} />
+              <Text style={[styles.chartPlaceholderText, { color: colors.icon }]}>
+                Gráfico no disponible
               </Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+          )}
+
+          {/* Controles del Gráfico */}
+          <View style={styles.chartControls}>
+            {intervals.map((interval) => (
+              <TouchableOpacity
+                key={interval}
+                style={[
+                  styles.intervalButton,
+                  {
+                    backgroundColor: selectedInterval === interval
+                      ? (isDark ? 'transparent' : colors.tint)
+                      : (isDark ? '#1E1E1E' : '#F0F0F0'),
+                    borderColor: selectedInterval === interval && isDark
+                      ? colors.tint
+                      : 'transparent',
+                  },
+                ]}
+                onPress={() => setSelectedInterval(interval)}>
+                <Text
+                  style={[
+                    styles.intervalText,
+                    {
+                      color: selectedInterval === interval
+                        ? (isDark ? colors.tint : '#FFFFFF')
+                        : colors.text,
+                      fontWeight: selectedInterval === interval ? '700' : '500',
+                    },
+                  ]}>
+                  {interval}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Estadísticas */}
@@ -271,70 +369,35 @@ export default function CryptoDetailScreen() {
             Estadísticas
           </Text>
 
-          <View style={styles.statsGrid}>
-            <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
-                  borderColor: isDark ? '#333' : '#E0E0E0',
-                },
-              ]}>
-              <Text style={[styles.statLabel, { color: colors.icon }]}>
-                Máximo 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatPrice(high24h, currency)}
-              </Text>
-            </View>
+          <View style={styles.statRow}>
+            <Text style={[styles.statLabel, { color: colors.icon }]}>
+              Capitalización de Mercado
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {formatPrice(marketCap, currency)}
+            </Text>
+          </View>
 
-            <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
-                  borderColor: isDark ? '#333' : '#E0E0E0',
-                },
-              ]}>
-              <Text style={[styles.statLabel, { color: colors.icon }]}>
-                Mínimo 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatPrice(low24h, currency)}
-              </Text>
-            </View>
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#E0E0E0' }]} />
 
-            <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
-                  borderColor: isDark ? '#333' : '#E0E0E0',
-                },
-              ]}>
-              <Text style={[styles.statLabel, { color: colors.icon }]}>
-                Capitalización
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatPrice(marketCap, currency)}
-              </Text>
-            </View>
+          <View style={styles.statRow}>
+            <Text style={[styles.statLabel, { color: colors.icon }]}>
+              Volumen 24h
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {formatPrice(volume, currency)}
+            </Text>
+          </View>
 
-            <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
-                  borderColor: isDark ? '#333' : '#E0E0E0',
-                },
-              ]}>
-              <Text style={[styles.statLabel, { color: colors.icon }]}>
-                Volumen 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatPrice(volume, currency)}
-              </Text>
-            </View>
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#E0E0E0' }]} />
+
+          <View style={styles.statRow}>
+            <Text style={[styles.statLabel, { color: colors.icon }]}>
+              Suministro Máximo
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {maxSupply > 0 ? `${(maxSupply / 1_000_000).toFixed(2)}M ${coinDetail.symbol.toUpperCase()}` : 'N/A'}
+            </Text>
           </View>
         </View>
 
@@ -346,7 +409,7 @@ export default function CryptoDetailScreen() {
             </Text>
             <Text
               style={[styles.descriptionText, { color: colors.text }]}
-              numberOfLines={10}>
+              numberOfLines={15}>
               {coinDetail.description.en.replace(/<[^>]*>/g, '')}
             </Text>
           </View>
@@ -367,26 +430,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   backButton: {
     padding: 4,
   },
-  headerTitleContainer: {
+  headerCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
     gap: 8,
-  },
-  coinIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  headerRank: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   placeholder: {
     width: 36,
@@ -401,82 +460,90 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
-  symbolText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
   priceText: {
     fontSize: 36,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   priceChangeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  priceChangeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
   priceChangeText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
-  periodSelector: {
-    flexDirection: 'row',
+  chartContainer: {
     paddingHorizontal: 16,
-    gap: 8,
     marginBottom: 24,
   },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+  chartWrapper: {
+    marginBottom: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  periodButtonText: {
+  chart: {
+    marginVertical: 8,
+  },
+  chartPlaceholder: {
+    height: 200,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chartPlaceholderText: {
+    marginTop: 12,
     fontSize: 14,
+    fontWeight: '500',
+  },
+  chartControls: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  intervalButton: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  intervalText: {
+    fontSize: 13,
     fontWeight: '600',
   },
   statsSection: {
     paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    paddingVertical: 20,
     marginBottom: 16,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
   },
-  statCard: {
-    width: '47%',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: 8,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  statDivider: {
+    height: 1,
   },
   descriptionSection: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
   descriptionText: {
     fontSize: 14,
@@ -509,4 +576,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

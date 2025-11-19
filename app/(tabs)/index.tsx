@@ -1,24 +1,26 @@
+
 import { Colors } from '@/constants/theme';
+import { useCoins } from '@/context/CoinContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import { formatPercentage, formatPrice } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
+  Image,
+  Keyboard,
   Platform,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Tipo para los datos de criptomoneda
 interface CryptoCoin {
@@ -35,97 +37,41 @@ interface CryptoCoin {
 }
 
 type Currency = 'usd' | 'mxn' | 'eur';
-type ViewMode = 'list' | 'grid';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16px padding each side + 16px gap
 
 // Componente de gráfico simple
-const MiniChart = ({ data, isPositive }: { data: number[]; isPositive: boolean }) => {
-  if (!data || data.length === 0) {
-    return (
-      <View style={styles.chartPlaceholder}>
-        <Ionicons name="trending-up" size={16} color="#999" />
-      </View>
-    );
-  }
 
-  const chartHeight = 40;
-  const chartWidth = GRID_ITEM_WIDTH - 32;
-  const minPrice = Math.min(...data);
-  const maxPrice = Math.max(...data);
-  const priceRange = maxPrice - minPrice || 1;
-
-  const points = data.map((price, index) => {
-    const x = (index / (data.length - 1)) * chartWidth;
-    const y = chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const pathData = `M ${points}`;
-
-  return (
-    <View style={styles.chartContainer}>
-      <Svg width={chartWidth} height={chartHeight} style={styles.chart}>
-        <Path
-          d={`M ${points}`}
-          fill="none"
-          stroke={isPositive ? '#4CAF50' : '#F44336'}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    </View>
-  );
-};
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme, toggleTheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { coins, loading, error, currency, setCurrency, refreshCoins } = useCoins();
 
-  // Estados
-  const [coins, setCoins] = useState<CryptoCoin[]>([]);
+  // Estados locales solo para UI
   const [filteredCoins, setFilteredCoins] = useState<CryptoCoin[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<Currency>('usd');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
-  // Función para obtener datos de la API
-  const fetchCoins = useCallback(async (vsCurrency: Currency = 'usd', includeSparkline: boolean = false) => {
-    try {
-      setError(null);
-      const sparklineParam = includeSparkline ? 'true' : 'false';
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=50&page=1&sparkline=${sparklineParam}`
-      );
+  // Función para obtener colores pastel basados en el símbolo
+  const getCardColors = (symbol: string, isDark: boolean) => {
+    const palettes = [
+      { light: '#FFF3E0', dark: '#3E2723' }, // Orange
+      { light: '#F3E5F5', dark: '#4A148C' }, // Purple
+      { light: '#E8F5E9', dark: '#1B5E20' }, // Green
+      { light: '#E3F2FD', dark: '#1A237E' }, // Blue
+      { light: '#FFEBEE', dark: '#B71C1C' }, // Red
+      { light: '#E0F7FA', dark: '#006064' }, // Cyan
+    ];
+    const index = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % palettes.length;
+    return palettes[index];
+  };
 
-      if (!response.ok) {
-        throw new Error('Error al obtener los datos');
-      }
+  // Cargar sparkline solo cuando cambia a grid y no tenemos datos de sparkline
 
-      const data = await response.json();
-      setCoins(data);
-      setFilteredCoins(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      console.error('Error fetching coins:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  // Cargar datos al montar el componente o cambiar vista
-  useEffect(() => {
-    fetchCoins(currency, viewMode === 'grid');
-  }, [currency, viewMode, fetchCoins]);
 
   // Filtrar monedas según búsqueda
   useEffect(() => {
@@ -143,15 +89,15 @@ export default function HomeScreen() {
   }, [searchQuery, coins]);
 
   // Función para pull-to-refresh
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    fetchCoins(currency, viewMode === 'grid');
-  }, [currency, viewMode, fetchCoins]);
+    await refreshCoins();
+    setRefreshing(false);
+  }, [refreshCoins]);
 
   // Función para cambiar moneda
   const handleCurrencyChange = (newCurrency: Currency) => {
     setCurrency(newCurrency);
-    setLoading(true);
   };
 
   // Navegar a detalles
@@ -186,6 +132,13 @@ export default function HomeScreen() {
         ]}>
         <View style={styles.coinHeader}>
           <View style={styles.coinInfo}>
+            {item.image && (
+              <Image
+                source={{ uri: item.image }}
+                style={styles.coinImage}
+                resizeMode="contain"
+              />
+            )}
             <Text style={[styles.coinRank, { color: colors.icon }]}>
               #{item.market_cap_rank}
             </Text>
@@ -246,11 +199,12 @@ export default function HomeScreen() {
   };
 
   // Renderizar tarjeta de criptomoneda (grid)
-  const renderGridItem = ({ item }: { item: CryptoCoin }) => {
+  const renderGridItem = ({ item, index }: { item: CryptoCoin; index: number }) => {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
     const favorite = isFavorite(item.id);
-    const sparklineData = item.sparkline_in_7d?.price || [];
+    const cardColors = getCardColors(item.symbol, isDark);
+    const bgColor = isDark ? cardColors.dark : cardColors.light;
 
     return (
       <TouchableOpacity
@@ -259,18 +213,31 @@ export default function HomeScreen() {
         style={[
           styles.gridCard,
           {
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-            borderColor: isDark ? '#333' : '#E0E0E0',
+            backgroundColor: bgColor,
           },
         ]}>
         <View style={styles.gridHeader}>
-          <View style={styles.gridCoinInfo}>
-            <Text style={[styles.gridCoinName, { color: colors.text }]} numberOfLines={1}>
-              {item.symbol.toUpperCase()}
-            </Text>
-            <Text style={[styles.gridCoinRank, { color: colors.icon }]}>
-              #{item.market_cap_rank}
-            </Text>
+          <View style={styles.gridIconRow}>
+            {item.image && (
+              <Image
+                source={{ uri: item.image }}
+                style={styles.gridCoinImage}
+                resizeMode="contain"
+              />
+            )}
+            <View style={styles.gridTitleContainer}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={[styles.gridCoinSymbol, { color: colors.text }]}>
+                  {item.symbol.toUpperCase()}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.text, opacity: 0.6, fontWeight: '600' }}>
+                  #{item.market_cap_rank}
+                </Text>
+              </View>
+              <Text style={[styles.gridCoinName, { color: colors.text, opacity: 0.7 }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
             onPress={(e) => {
@@ -280,35 +247,24 @@ export default function HomeScreen() {
             style={styles.gridFavoriteButton}>
             <Ionicons
               name={favorite ? 'star' : 'star-outline'}
-              size={18}
-              color={favorite ? '#FFD700' : colors.icon}
+              size={20}
+              color={favorite ? '#FFD700' : colors.text}
             />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.gridChartContainer}>
-          <MiniChart data={sparklineData} isPositive={isPositive} />
-        </View>
-
-        <View style={styles.gridPriceContainer}>
-          <Text style={[styles.gridPrice, { color: colors.text }]} numberOfLines={1}>
-            {formatPrice(item.current_price, currency)}
-          </Text>
-          <View
-            style={[
-              styles.gridPriceChange,
-              {
-                backgroundColor: isPositive
-                  ? 'rgba(76, 175, 80, 0.15)'
-                  : 'rgba(244, 67, 54, 0.15)',
-              },
-            ]}>
+        <View style={styles.gridPriceSection}>
+          <Text style={[styles.gridPriceLabel, { color: colors.text, opacity: 0.6 }]}>Price</Text>
+          <View style={styles.gridPriceRow}>
+            <Text style={[styles.gridPrice, { color: colors.text }]}>
+              {formatPrice(item.current_price, currency)}
+            </Text>
             <Text
               style={[
-                styles.gridPriceChangeText,
+                styles.gridPriceChange,
                 { color: isPositive ? '#4CAF50' : '#F44336' },
               ]}>
-              {formatPercentage(priceChange)}
+              {isPositive ? '+' : ''}{formatPercentage(priceChange)}
             </Text>
           </View>
         </View>
@@ -323,21 +279,23 @@ export default function HomeScreen() {
         <Text style={[styles.title, { color: colors.text }]}>
           CryptoView Mobile
         </Text>
-        <TouchableOpacity
-          onPress={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-          style={[
-            styles.viewModeButton,
-            {
-              backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-              borderColor: isDark ? '#444' : '#E0E0E0',
-            },
-          ]}>
-          <Ionicons
-            name={viewMode === 'list' ? 'grid' : 'list'}
-            size={20}
-            color={colors.text}
-          />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={[
+              styles.viewModeButton,
+              {
+                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
+                borderColor: isDark ? '#444' : '#E0E0E0',
+              },
+            ]}>
+            <Ionicons
+              name={isDark ? 'sunny' : 'moon'}
+              size={20}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Buscador */}
@@ -363,6 +321,9 @@ export default function HomeScreen() {
           onChangeText={setSearchQuery}
           blurOnSubmit={false}
           returnKeyType="search"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          autoCorrect={false}
+          autoCapitalize="none"
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -371,7 +332,7 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Selector de Moneda - Mejorado con mejor opacidad */}
+      {/* Selector de Moneda - Mejorado con mejor visibilidad */}
       <View style={styles.currencySelector}>
         <TouchableOpacity
           style={[
@@ -381,16 +342,15 @@ export default function HomeScreen() {
                 currency === 'usd'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(0, 0, 0, 0.08)',
-              borderWidth: currency === 'usd' ? 2 : 1,
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.05)',
+              borderWidth: 1,
               borderColor:
                 currency === 'usd'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.3)'
-                    : 'rgba(0, 0, 0, 0.15)',
-              opacity: currency === 'usd' ? 1 : 0.7,
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(0, 0, 0, 0.1)',
             },
           ]}
           onPress={() => handleCurrencyChange('usd')}>
@@ -401,10 +361,9 @@ export default function HomeScreen() {
                 color:
                   currency === 'usd'
                     ? '#FFFFFF'
-                    : isDark
-                      ? '#FFFFFF'
-                      : colors.text,
-                fontWeight: currency === 'usd' ? '700' : '500',
+                    : colors.text,
+                fontWeight: currency === 'usd' ? '700' : '600',
+                fontSize: currency === 'usd' ? 15 : 14,
               },
             ]}>
             USD
@@ -419,16 +378,15 @@ export default function HomeScreen() {
                 currency === 'mxn'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(0, 0, 0, 0.08)',
-              borderWidth: currency === 'mxn' ? 2 : 1,
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.05)',
+              borderWidth: 1,
               borderColor:
                 currency === 'mxn'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.3)'
-                    : 'rgba(0, 0, 0, 0.15)',
-              opacity: currency === 'mxn' ? 1 : 0.7,
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(0, 0, 0, 0.1)',
             },
           ]}
           onPress={() => handleCurrencyChange('mxn')}>
@@ -439,10 +397,9 @@ export default function HomeScreen() {
                 color:
                   currency === 'mxn'
                     ? '#FFFFFF'
-                    : isDark
-                      ? '#FFFFFF'
-                      : colors.text,
-                fontWeight: currency === 'mxn' ? '700' : '500',
+                    : colors.text,
+                fontWeight: currency === 'mxn' ? '700' : '600',
+                fontSize: currency === 'mxn' ? 15 : 14,
               },
             ]}>
             MXN
@@ -457,16 +414,15 @@ export default function HomeScreen() {
                 currency === 'eur'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(0, 0, 0, 0.08)',
-              borderWidth: currency === 'eur' ? 2 : 1,
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.05)',
+              borderWidth: 1,
               borderColor:
                 currency === 'eur'
                   ? colors.tint
                   : isDark
-                    ? 'rgba(255, 255, 255, 0.3)'
-                    : 'rgba(0, 0, 0, 0.15)',
-              opacity: currency === 'eur' ? 1 : 0.7,
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(0, 0, 0, 0.1)',
             },
           ]}
           onPress={() => handleCurrencyChange('eur')}>
@@ -477,10 +433,9 @@ export default function HomeScreen() {
                 color:
                   currency === 'eur'
                     ? '#FFFFFF'
-                    : isDark
-                      ? '#FFFFFF'
-                      : colors.text,
-                fontWeight: currency === 'eur' ? '700' : '500',
+                    : colors.text,
+                fontWeight: currency === 'eur' ? '700' : '600',
+                fontSize: currency === 'eur' ? 15 : 14,
               },
             ]}>
             EUR
@@ -526,8 +481,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.tint }]}
             onPress={() => {
-              setLoading(true);
-              fetchCoins(currency, viewMode === 'grid');
+              refreshCoins();
             }}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
@@ -540,59 +494,33 @@ export default function HomeScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}>
-      {viewMode === 'list' ? (
-        <FlatList
-          data={filteredCoins}
-          renderItem={renderCoinItem}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={
-            <View style={styles.centerContainer}>
-              <Ionicons name="search" size={48} color={colors.icon} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>
-                No se encontraron resultados
-              </Text>
-            </View>
-          }
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.tint}
-              colors={[colors.tint]}
-            />
-          }
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <FlatList
-          data={filteredCoins}
-          renderItem={renderGridItem}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          ListEmptyComponent={
-            <View style={styles.centerContainer}>
-              <Ionicons name="search" size={48} color={colors.icon} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>
-                No se encontraron resultados
-              </Text>
-            </View>
-          }
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.tint}
-              colors={[colors.tint]}
-            />
-          }
-          contentContainerStyle={styles.gridContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <FlatList
+        key={viewMode} // Forzar re-render al cambiar modo
+        data={filteredCoins}
+        renderItem={viewMode === 'list' ? renderCoinItem : renderGridItem}
+        keyExtractor={(item) => item.id}
+        numColumns={viewMode === 'grid' ? 2 : 1}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <View style={styles.centerContainer}>
+            <Ionicons name="search" size={48} color={colors.icon} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No se encontraron resultados
+            </Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.tint}
+            colors={[colors.tint]}
+          />
+        }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-between', paddingHorizontal: 16 } : undefined}
+      />
       {loading && coins.length > 0 && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="small" color={colors.tint} />
@@ -619,6 +547,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
   viewModeButton: {
     padding: 8,
@@ -688,6 +620,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  coinImage: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
+    borderRadius: 16,
+  },
   coinRank: {
     fontSize: 14,
     fontWeight: '600',
@@ -730,128 +668,106 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Grid styles
-  gridContent: {
-    padding: 16,
-    paddingBottom: 16,
-  },
-  gridRow: {
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+  // Grid Styles
   gridCard: {
-    width: GRID_ITEM_WIDTH,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    flex: 1,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 24,
+    maxWidth: '48%',
+    minHeight: 140,
+    justifyContent: 'space-between',
   },
   gridHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  gridCoinInfo: {
+  gridIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
-  gridCoinName: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
+  gridCoinImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
   },
-  gridCoinRank: {
-    fontSize: 10,
-    fontWeight: '500',
+  gridTitleContainer: {
+    flex: 1,
+  },
+  gridCoinSymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  gridCoinName: {
+    fontSize: 12,
+    marginTop: 2,
   },
   gridFavoriteButton: {
-    padding: 2,
+    padding: 4,
   },
-  gridChartContainer: {
-    height: 50,
-    marginVertical: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  gridPriceSection: {
+    marginTop: 8,
   },
-  chartContainer: {
-    width: '100%',
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chart: {
-    width: '100%',
-  },
-  chartPlaceholder: {
-    width: '100%',
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gridPriceContainer: {
-    marginTop: 4,
-  },
-  gridPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
+  gridPriceLabel: {
+    fontSize: 12,
     marginBottom: 4,
   },
-  gridPriceChange: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  gridPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
   },
-  gridPriceChangeText: {
-    fontSize: 11,
+  gridPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginRight: 4,
+  },
+  gridPriceChange: {
+    fontSize: 12,
     fontWeight: '600',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    padding: 20,
+    marginTop: 50,
   },
   emptyText: {
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 16,
     textAlign: 'center',
   },
   loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  errorText: {
+    marginTop: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
