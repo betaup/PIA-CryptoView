@@ -10,20 +10,26 @@ const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: '#C5705D', // Terracotta for primary text/accents
+    textSecondary: '#D0B8A8', // Darker Beige for secondary text
+    background: '#F8EDE3', // Light Beige
+    card: '#DFD3C3', // Beige
+    tint: '#C5705D', // Terracotta
+    icon: '#D0B8A8', // Darker Beige
+    tabIconDefault: '#D0B8A8',
+    tabIconSelected: '#C5705D',
+    border: '#D0B8A8',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: '#F8EDE3', // Light Beige for text on dark
+    textSecondary: '#D0B8A8',
+    background: '#1A1A1A', // Dark Grey/Brown
+    card: '#2C2C2C', // Slightly lighter dark
+    tint: '#C5705D', // Terracotta (keeps identity)
+    icon: '#A0A0A0',
+    tabIconDefault: '#666666',
+    tabIconSelected: '#C5705D',
+    border: '#444444',
   },
 };
 

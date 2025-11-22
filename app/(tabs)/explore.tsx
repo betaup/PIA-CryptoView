@@ -46,19 +46,7 @@ export default function FavoritesScreen() {
   const [currency, setCurrency] = useState<Currency>('usd');
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  // Función para obtener colores pastel basados en el símbolo
-  const getCardColors = (symbol: string, isDark: boolean) => {
-    const palettes = [
-      { light: '#FFF3E0', dark: '#3E2723' }, // Orange
-      { light: '#F3E5F5', dark: '#4A148C' }, // Purple
-      { light: '#E8F5E9', dark: '#1B5E20' }, // Green
-      { light: '#E3F2FD', dark: '#1A237E' }, // Blue
-      { light: '#FFEBEE', dark: '#B71C1C' }, // Red
-      { light: '#E0F7FA', dark: '#006064' }, // Cyan
-    ];
-    const index = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % palettes.length;
-    return palettes[index];
-  };
+
 
   // Función para obtener datos de las criptomonedas favoritas
   const fetchFavoriteCoins = useCallback(async (vsCurrency: Currency = 'usd', forceRefresh: boolean = false) => {
@@ -84,34 +72,22 @@ export default function FavoritesScreen() {
       }
 
       // Crear clave de caché única para favoritos
-      const favoritesKey = `favorites_${validFavorites.sort().join(',')}_${vsCurrency}`;
+      // Crear endpoint único para favoritos
+      const ids = validFavorites.join(',');
+      const endpoint = `/coins/markets?vs_currency=${vsCurrency}&ids=${ids}&order=market_cap_desc&sparkline=false`;
 
       // Verificar caché primero (solo si no es un refresh forzado)
       if (!forceRefresh) {
-        const cachedData = getCachedData(vsCurrency, false);
+        const cachedData = getCachedData(endpoint);
         if (cachedData) {
-          // Filtrar solo los favoritos del caché
-          const orderedData = validFavorites
-            .map((id) => cachedData.find((coin: CryptoCoin) => coin && coin.id === id))
-            .filter((coin) => coin !== undefined && coin !== null);
-
-          if (orderedData.length > 0) {
-            setFavoriteCoins(orderedData);
-            setLoading(false);
-            setRefreshing(false);
-            return;
-          }
+          setFavoriteCoins(cachedData);
+          setLoading(false);
+          setRefreshing(false);
+          return;
         }
       }
 
-      // ...
-
-      const ids = validFavorites.join(',');
-      const data = await fetchWithBackoff(
-        `/coins/markets?vs_currency=${vsCurrency}&ids=${ids}&order=market_cap_desc&sparkline=false`
-      );
-
-      // Validar que la respuesta es un array
+      const data = await fetchWithBackoff(endpoint);
 
       // Validar que la respuesta es un array
       if (!Array.isArray(data)) {
@@ -125,8 +101,8 @@ export default function FavoritesScreen() {
         .map((id) => data.find((coin: CryptoCoin) => coin && coin.id === id))
         .filter((coin) => coin !== undefined && coin !== null);
 
-      // Guardar en caché (usar el caché general)
-      setCachedData(vsCurrency, false, data);
+      // Guardar en caché
+      setCachedData(endpoint, orderedData);
 
       setFavoriteCoins(orderedData);
     } catch (err) {
@@ -194,8 +170,7 @@ export default function FavoritesScreen() {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
     const favorite = isFavorite(item.id);
-    const cardColors = getCardColors(item.symbol, isDark);
-    const bgColor = isDark ? cardColors.dark : cardColors.light;
+
 
     return (
       <TouchableOpacity
@@ -204,7 +179,9 @@ export default function FavoritesScreen() {
         style={[
           styles.gridCard,
           {
-            backgroundColor: bgColor,
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderWidth: 1,
           },
         ]}>
         <View style={styles.gridHeader}>
@@ -255,7 +232,7 @@ export default function FavoritesScreen() {
                 styles.gridPriceChange,
                 { color: isPositive ? '#4CAF50' : '#F44336' },
               ]}>
-              {isPositive ? '+' : ''}{formatPercentage(priceChange)}
+              {formatPercentage(priceChange)}
             </Text>
           </View>
         </View>
@@ -282,16 +259,12 @@ export default function FavoritesScreen() {
               backgroundColor:
                 currency === 'usd'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-              borderWidth: currency === 'usd' ? 2.5 : 1.5,
+                  : 'transparent',
+              borderWidth: 1,
               borderColor:
                 currency === 'usd'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.4)'
-                    : 'rgba(0, 0, 0, 0.2)',
+                  : colors.border,
             },
           ]}
           onPress={() => {
@@ -323,16 +296,12 @@ export default function FavoritesScreen() {
               backgroundColor:
                 currency === 'mxn'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-              borderWidth: currency === 'mxn' ? 2.5 : 1.5,
+                  : 'transparent',
+              borderWidth: 1,
               borderColor:
                 currency === 'mxn'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.4)'
-                    : 'rgba(0, 0, 0, 0.2)',
+                  : colors.border,
             },
           ]}
           onPress={() => {
@@ -364,16 +333,12 @@ export default function FavoritesScreen() {
               backgroundColor:
                 currency === 'eur'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-              borderWidth: currency === 'eur' ? 2.5 : 1.5,
+                  : 'transparent',
+              borderWidth: 1,
               borderColor:
                 currency === 'eur'
                   ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.4)'
-                    : 'rgba(0, 0, 0, 0.2)',
+                  : colors.border,
             },
           ]}
           onPress={() => {

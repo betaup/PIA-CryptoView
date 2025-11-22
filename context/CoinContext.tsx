@@ -37,9 +37,11 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchCoins = useCallback(async (forceRefresh = false) => {
         try {
             setError(null);
+            const endpoint = `/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=50&page=1&sparkline=false`;
+
             if (!forceRefresh) {
                 setLoading(true);
-                const cached = getCachedData(currency, false);
+                const cached = getCachedData(endpoint);
                 if (cached) {
                     setCoins(cached);
                     setLoading(false);
@@ -47,11 +49,9 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
 
-            const data = await fetchWithBackoff(
-                `/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=50&page=1&sparkline=false`
-            );
+            const data = await fetchWithBackoff(endpoint);
 
-            setCachedData(currency, false, data);
+            setCachedData(endpoint, data);
             setCoins(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al cargar datos');

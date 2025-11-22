@@ -1,3 +1,4 @@
+import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -10,10 +11,10 @@ export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Colors based on theme
-  const activeColor = isDark ? '#FFFFFF' : '#000000';
-  const inactiveColor = isDark ? '#8E8E93' : '#8E8E93';
-  const backgroundColor = isDark ? '#1C1C1E' : '#FFFFFF';
+  const colors = Colors[colorScheme ?? 'light'];
+  const activeColor = colors.tabIconSelected;
+  const inactiveColor = colors.tabIconDefault;
+  const backgroundColor = colors.card; // Use card color for tab bar background
 
   const renderTabIcon = (name: keyof typeof Ionicons.glyphMap, focused: boolean) => (
     <View style={styles.iconContainer}>

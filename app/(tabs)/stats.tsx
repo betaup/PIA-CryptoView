@@ -96,9 +96,11 @@ export default function StatsScreen() {
         try {
             setError(null);
 
+            const endpoint = `/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=30&page=1&sparkline=true`;
+
             // Verificar caché primero (solo si no es un refresh forzado)
             if (!forceRefresh) {
-                const cachedData = getCachedData(vsCurrency, true); // Siempre pedimos sparkline
+                const cachedData = getCachedData(endpoint); // Siempre pedimos sparkline
                 if (cachedData) {
                     setCoins(cachedData);
                     setLoading(false);
@@ -108,12 +110,10 @@ export default function StatsScreen() {
             }
 
             // Siempre pedimos sparkline en esta vista
-            const data = await fetchWithBackoff(
-                `/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=30&page=1&sparkline=true`
-            );
+            const data = await fetchWithBackoff(endpoint);
 
             // Guardar en caché
-            setCachedData(vsCurrency, true, data);
+            setCachedData(endpoint, data);
 
             setCoins(data);
         } catch (err) {
@@ -169,8 +169,8 @@ export default function StatsScreen() {
                 style={[
                     styles.gridCard,
                     {
-                        backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                        borderColor: isDark ? '#333' : '#E0E0E0',
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
                     },
                 ]}>
                 <View style={styles.gridHeader}>

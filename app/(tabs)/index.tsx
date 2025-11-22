@@ -42,6 +42,183 @@ type Currency = 'usd' | 'mxn' | 'eur';
 // Componente de gráfico simple
 
 
+interface HeaderProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  currency: Currency;
+  handleCurrencyChange: (currency: Currency) => void;
+  isDark: boolean;
+  toggleTheme: () => void;
+  colors: any;
+}
+
+const Header = ({
+  searchQuery,
+  setSearchQuery,
+  currency,
+  handleCurrencyChange,
+  isDark,
+  toggleTheme,
+  colors,
+}: HeaderProps) => (
+  <View style={styles.headerContainer}>
+    <View style={styles.titleRow}>
+      <Text style={[styles.title, { color: colors.text }]}>
+        CryptoView Mobile
+      </Text>
+      <View style={styles.headerButtons}>
+        <TouchableOpacity
+          onPress={toggleTheme}
+          style={[
+            styles.viewModeButton,
+            {
+              backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
+              borderColor: isDark ? '#444' : '#E0E0E0',
+            },
+          ]}>
+          <Ionicons
+            name={isDark ? 'sunny' : 'moon'}
+            size={20}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+
+    {/* Buscador */}
+    <View
+      style={[
+        styles.searchContainer,
+        {
+          backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
+          borderColor: isDark ? '#444' : '#E0E0E0',
+        },
+      ]}>
+      <Ionicons
+        name="search"
+        size={20}
+        color={colors.icon}
+        style={styles.searchIcon}
+      />
+      <TextInput
+        style={[styles.searchInput, { color: colors.text }]}
+        placeholder="Buscar criptomoneda..."
+        placeholderTextColor={colors.icon}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        blurOnSubmit={false}
+        returnKeyType="search"
+        onSubmitEditing={() => Keyboard.dismiss()}
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
+      {searchQuery.length > 0 && (
+        <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <Ionicons name="close-circle" size={20} color={colors.icon} />
+        </TouchableOpacity>
+      )}
+    </View>
+
+    {/* Selector de Moneda - Mejorado con mejor visibilidad */}
+    <View style={styles.currencySelector}>
+      <TouchableOpacity
+        style={[
+          styles.currencyButton,
+          {
+            backgroundColor:
+              currency === 'usd'
+                ? colors.tint
+                : 'transparent',
+            borderWidth: 1,
+            borderColor:
+              currency === 'usd'
+                ? colors.tint
+                : colors.border,
+          },
+        ]}
+        onPress={() => handleCurrencyChange('usd')}>
+        <Text
+          style={[
+            styles.currencyButtonText,
+            {
+              color:
+                currency === 'usd'
+                  ? '#FFFFFF'
+                  : colors.text,
+              fontWeight: currency === 'usd' ? '700' : '600',
+              fontSize: currency === 'usd' ? 15 : 14,
+            },
+          ]}>
+          USD
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.currencyButton,
+          {
+            backgroundColor:
+              currency === 'mxn'
+                ? colors.tint
+                : 'transparent',
+            borderWidth: 1,
+            borderColor:
+              currency === 'mxn'
+                ? colors.tint
+                : colors.border,
+          },
+        ]}
+        onPress={() => handleCurrencyChange('mxn')}>
+        <Text
+          style={[
+            styles.currencyButtonText,
+            {
+              color:
+                currency === 'mxn'
+                  ? '#FFFFFF'
+                  : colors.text,
+              fontWeight: currency === 'mxn' ? '700' : '600',
+              fontSize: currency === 'mxn' ? 15 : 14,
+            },
+          ]}>
+          MXN
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.currencyButton,
+          {
+            backgroundColor:
+              currency === 'eur'
+                ? colors.tint
+                : 'transparent',
+            borderWidth: 1,
+            borderColor:
+              currency === 'eur'
+                ? colors.tint
+                : colors.border,
+          },
+        ]}
+        onPress={() => handleCurrencyChange('eur')}>
+        <Text
+          style={[
+            styles.currencyButtonText,
+            {
+              color:
+                currency === 'eur'
+                  ? '#FFFFFF'
+                  : colors.text,
+              fontWeight: currency === 'eur' ? '700' : '600',
+              fontSize: currency === 'eur' ? 15 : 14,
+            },
+          ]}>
+          EUR
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
 export default function HomeScreen() {
   const { colorScheme, toggleTheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -56,19 +233,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
-  // Función para obtener colores pastel basados en el símbolo
-  const getCardColors = (symbol: string, isDark: boolean) => {
-    const palettes = [
-      { light: '#FFF3E0', dark: '#3E2723' }, // Orange
-      { light: '#F3E5F5', dark: '#4A148C' }, // Purple
-      { light: '#E8F5E9', dark: '#1B5E20' }, // Green
-      { light: '#E3F2FD', dark: '#1A237E' }, // Blue
-      { light: '#FFEBEE', dark: '#B71C1C' }, // Red
-      { light: '#E0F7FA', dark: '#006064' }, // Cyan
-    ];
-    const index = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % palettes.length;
-    return palettes[index];
-  };
+
 
   // Cargar sparkline solo cuando cambia a grid y no tenemos datos de sparkline
 
@@ -126,8 +291,8 @@ export default function HomeScreen() {
         style={[
           styles.coinCard,
           {
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-            borderColor: isDark ? '#333' : '#E0E0E0',
+            backgroundColor: colors.card,
+            borderColor: colors.border,
           },
         ]}>
         <View style={styles.coinHeader}>
@@ -203,8 +368,7 @@ export default function HomeScreen() {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
     const favorite = isFavorite(item.id);
-    const cardColors = getCardColors(item.symbol, isDark);
-    const bgColor = isDark ? cardColors.dark : cardColors.light;
+
 
     return (
       <TouchableOpacity
@@ -213,7 +377,9 @@ export default function HomeScreen() {
         style={[
           styles.gridCard,
           {
-            backgroundColor: bgColor,
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderWidth: 1,
           },
         ]}>
         <View style={styles.gridHeader}>
@@ -264,7 +430,7 @@ export default function HomeScreen() {
                 styles.gridPriceChange,
                 { color: isPositive ? '#4CAF50' : '#F44336' },
               ]}>
-              {isPositive ? '+' : ''}{formatPercentage(priceChange)}
+              {formatPercentage(priceChange)}
             </Text>
           </View>
         </View>
@@ -272,178 +438,7 @@ export default function HomeScreen() {
     );
   };
 
-  // Renderizar header con buscador y selector de moneda
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          CryptoView Mobile
-        </Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            onPress={toggleTheme}
-            style={[
-              styles.viewModeButton,
-              {
-                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-                borderColor: isDark ? '#444' : '#E0E0E0',
-              },
-            ]}>
-            <Ionicons
-              name={isDark ? 'sunny' : 'moon'}
-              size={20}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* Buscador */}
-      <View
-        style={[
-          styles.searchContainer,
-          {
-            backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-            borderColor: isDark ? '#444' : '#E0E0E0',
-          },
-        ]}>
-        <Ionicons
-          name="search"
-          size={20}
-          color={colors.icon}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Buscar criptomoneda..."
-          placeholderTextColor={colors.icon}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          blurOnSubmit={false}
-          returnKeyType="search"
-          onSubmitEditing={() => Keyboard.dismiss()}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color={colors.icon} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Selector de Moneda - Mejorado con mejor visibilidad */}
-      <View style={styles.currencySelector}>
-        <TouchableOpacity
-          style={[
-            styles.currencyButton,
-            {
-              backgroundColor:
-                currency === 'usd'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(0, 0, 0, 0.05)',
-              borderWidth: 1,
-              borderColor:
-                currency === 'usd'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-            },
-          ]}
-          onPress={() => handleCurrencyChange('usd')}>
-          <Text
-            style={[
-              styles.currencyButtonText,
-              {
-                color:
-                  currency === 'usd'
-                    ? '#FFFFFF'
-                    : colors.text,
-                fontWeight: currency === 'usd' ? '700' : '600',
-                fontSize: currency === 'usd' ? 15 : 14,
-              },
-            ]}>
-            USD
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.currencyButton,
-            {
-              backgroundColor:
-                currency === 'mxn'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(0, 0, 0, 0.05)',
-              borderWidth: 1,
-              borderColor:
-                currency === 'mxn'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-            },
-          ]}
-          onPress={() => handleCurrencyChange('mxn')}>
-          <Text
-            style={[
-              styles.currencyButtonText,
-              {
-                color:
-                  currency === 'mxn'
-                    ? '#FFFFFF'
-                    : colors.text,
-                fontWeight: currency === 'mxn' ? '700' : '600',
-                fontSize: currency === 'mxn' ? 15 : 14,
-              },
-            ]}>
-            MXN
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.currencyButton,
-            {
-              backgroundColor:
-                currency === 'eur'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(0, 0, 0, 0.05)',
-              borderWidth: 1,
-              borderColor:
-                currency === 'eur'
-                  ? colors.tint
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(0, 0, 0, 0.1)',
-            },
-          ]}
-          onPress={() => handleCurrencyChange('eur')}>
-          <Text
-            style={[
-              styles.currencyButtonText,
-              {
-                color:
-                  currency === 'eur'
-                    ? '#FFFFFF'
-                    : colors.text,
-                fontWeight: currency === 'eur' ? '700' : '600',
-                fontSize: currency === 'eur' ? 15 : 14,
-              },
-            ]}>
-            EUR
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
   // Renderizar estado de carga
   if (loading && coins.length === 0) {
@@ -453,7 +448,15 @@ export default function HomeScreen() {
           styles.container,
           { backgroundColor: colors.background },
         ]}>
-        {renderHeader()}
+        <Header
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currency={currency}
+          handleCurrencyChange={handleCurrencyChange}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          colors={colors}
+        />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
           <Text style={[styles.loadingText, { color: colors.text }]}>
@@ -472,7 +475,15 @@ export default function HomeScreen() {
           styles.container,
           { backgroundColor: colors.background },
         ]}>
-        {renderHeader()}
+        <Header
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currency={currency}
+          handleCurrencyChange={handleCurrencyChange}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          colors={colors}
+        />
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle" size={48} color="#F44336" />
           <Text style={[styles.errorText, { color: colors.text }]}>
@@ -500,7 +511,17 @@ export default function HomeScreen() {
         renderItem={viewMode === 'list' ? renderCoinItem : renderGridItem}
         keyExtractor={(item) => item.id}
         numColumns={viewMode === 'grid' ? 2 : 1}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={
+          <Header
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            currency={currency}
+            handleCurrencyChange={handleCurrencyChange}
+            isDark={isDark}
+            toggleTheme={toggleTheme}
+            colors={colors}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.centerContainer}>
             <Ionicons name="search" size={48} color={colors.icon} />
