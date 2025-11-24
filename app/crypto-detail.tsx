@@ -16,7 +16,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Defs, G, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 interface CoinDetail {
   id: string;
@@ -44,31 +44,38 @@ interface CoinDetail {
 }
 
 type Currency = 'usd' | 'mxn' | 'eur';
-type ChartInterval = '1H' | '1D' | '1S' | '1M';
+type ChartInterval = '24H' | '7D' | '1M';
 
 const { width } = Dimensions.get('window');
 
 // Componente de gráfico de línea
+
+// Componente de gráfico de línea mejorado
 const PriceChart = ({
   data,
-  isPositive
+  color
 }: {
   data: number[];
-  isPositive: boolean;
+  color: string;
 }) => {
   if (!data || data.length === 0) {
     return null;
   }
 
-  const chartHeight = 200;
+  const chartHeight = 220;
   const chartWidth = width - 32;
+  const paddingVertical = 20;
+  const paddingHorizontal = 0;
+  const contentHeight = chartHeight - paddingVertical * 2;
+
   const minPrice = Math.min(...data);
   const maxPrice = Math.max(...data);
   const priceRange = maxPrice - minPrice || 1;
 
+  // Puntos del gráfico
   const points = data.map((price, index) => {
     const x = (index / (data.length - 1)) * chartWidth;
-    const y = chartHeight - ((price - minPrice) / priceRange) * (chartHeight - 40) + 20;
+    const y = paddingVertical + contentHeight - ((price - minPrice) / priceRange) * contentHeight;
     return { x, y };
   });
 
@@ -78,35 +85,63 @@ const PriceChart = ({
 
   const fillPath = `${pathData} L ${chartWidth},${chartHeight} L 0,${chartHeight} Z`;
 
+  // Líneas de la cuadrícula (5 líneas horizontales)
+  const gridLines = Array.from({ length: 5 }).map((_, i) => {
+    const y = paddingVertical + (contentHeight / 4) * i;
+    return (
+      <Line
+        key={i}
+        x1="0"
+        y1={y}
+        x2={chartWidth}
+        y2={y}
+        stroke="rgba(150, 150, 150, 0.2)"
+        strokeWidth="1"
+        strokeDasharray="4 4"
+      />
+    );
+  });
+
   return (
-    <Svg width={chartWidth} height={chartHeight} style={styles.chart}>
-      <Defs>
-        <LinearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-          <Stop
-            offset="0%"
-            stopColor={isPositive ? '#4CAF50' : '#F44336'}
-            stopOpacity="0.3"
-          />
-          <Stop
-            offset="100%"
-            stopColor={isPositive ? '#4CAF50' : '#F44336'}
-            stopOpacity="0"
-          />
-        </LinearGradient>
-      </Defs>
-      <Path
-        d={fillPath}
-        fill="url(#gradient)"
-      />
-      <Path
-        d={pathData}
-        fill="none"
-        stroke={isPositive ? '#4CAF50' : '#F44336'}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
+    <View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: 10, color: '#888' }}>{maxPrice.toLocaleString()}</Text>
+      </View>
+
+      <Svg width={chartWidth} height={chartHeight} style={styles.chart}>
+        <Defs>
+          <LinearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={color} stopOpacity="0.4" />
+            <Stop offset="100%" stopColor={color} stopOpacity="0.0" />
+          </LinearGradient>
+        </Defs>
+
+        {/* Cuadrícula */}
+        <G>
+          {gridLines}
+        </G>
+
+        {/* Área sombreada */}
+        <Path
+          d={fillPath}
+          fill="url(#gradient)"
+        />
+
+        {/* Línea del gráfico */}
+        <Path
+          d={pathData}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -20, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: 10, color: '#888' }}>{minPrice.toLocaleString()}</Text>
+      </View>
+    </View>
   );
 };
 
@@ -126,7 +161,7 @@ export default function CryptoDetailScreen() {
   const [coinDetail, setCoinDetail] = useState<CoinDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedInterval, setSelectedInterval] = useState<ChartInterval>('1D');
+  const [selectedInterval, setSelectedInterval] = useState<ChartInterval>('24H');
   const [chartData, setChartData] = useState<number[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
 
@@ -159,13 +194,10 @@ export default function CryptoDetailScreen() {
       setChartLoading(true);
       let days = '1';
       switch (interval) {
-        case '1H':
+        case '24H':
           days = '1';
           break;
-        case '1D':
-          days = '1';
-          break;
-        case '1S':
+        case '7D':
           days = '7';
           break;
         case '1M':
@@ -179,15 +211,11 @@ export default function CryptoDetailScreen() {
 
       let prices = data.prices.map((item: [number, number]) => item[1]);
 
-      if (interval === '1H') {
-        const oneHourPoints = Math.floor(prices.length / 24);
-        prices = prices.slice(-oneHourPoints || -12);
-      }
-
       setChartData(prices);
     } catch (err) {
       console.error('Error fetching chart data:', err);
-      if (interval === '1S' && coinDetail?.market_data.sparkline_7d?.price) {
+      // Fallback to sparkline if available and interval is 7D (closest match to sparkline_7d)
+      if (interval === '7D' && coinDetail?.market_data.sparkline_7d?.price) {
         setChartData(coinDetail.market_data.sparkline_7d.price);
       }
     } finally {
@@ -262,7 +290,7 @@ export default function CryptoDetailScreen() {
   const marketCapRank = coinDetail.market_data.market_cap_rank || 0;
   const maxSupply = coinDetail.market_data.max_supply || 0;
 
-  const intervals: ChartInterval[] = ['1H', '1D', '1S', '1M'];
+  const intervals: ChartInterval[] = ['24H', '7D', '1M'];
 
   return (
     <SafeAreaView
@@ -303,7 +331,7 @@ export default function CryptoDetailScreen() {
             <Text
               style={[
                 styles.priceChangeText,
-                { color: isPositive ? '#4CAF50' : '#F44336' },
+                { color: isPositive ? colors.chartPositive : colors.chartNegative },
               ]}>
               {formatPercentage(priceChange24h)} (24h)
             </Text>
@@ -318,7 +346,7 @@ export default function CryptoDetailScreen() {
             </View>
           ) : chartData.length > 0 ? (
             <View style={styles.chartWrapper}>
-              <PriceChart data={chartData} isPositive={chartIsPositive} />
+              <PriceChart data={chartData} color={chartIsPositive ? colors.chartPositive : colors.chartNegative} />
             </View>
           ) : (
             <View style={[styles.chartPlaceholder, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>

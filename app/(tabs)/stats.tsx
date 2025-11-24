@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     Dimensions,
     FlatList,
+    Image,
     RefreshControl,
     StyleSheet,
     Text,
@@ -40,7 +41,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16px padding each side + 16px gap
 
 // Componente de gráfico simple
-const MiniChart = ({ data, isPositive }: { data: number[]; isPositive: boolean }) => {
+const MiniChart = ({ data, color }: { data: number[]; color: string }) => {
     if (!data || data.length === 0) {
         return (
             <View style={styles.chartPlaceholder}>
@@ -67,7 +68,7 @@ const MiniChart = ({ data, isPositive }: { data: number[]; isPositive: boolean }
                 <Path
                     d={`M ${points}`}
                     fill="none"
-                    stroke={isPositive ? '#4CAF50' : '#F44336'}
+                    stroke={color}
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -96,7 +97,7 @@ export default function StatsScreen() {
         try {
             setError(null);
 
-            const endpoint = `/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=30&page=1&sparkline=true`;
+            const endpoint = `/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=26&page=1&sparkline=true`;
 
             // Verificar caché primero (solo si no es un refresh forzado)
             if (!forceRefresh) {
@@ -174,6 +175,7 @@ export default function StatsScreen() {
                     },
                 ]}>
                 <View style={styles.gridHeader}>
+                    <Image source={{ uri: item.image }} style={styles.gridCoinImage} />
                     <View style={styles.gridCoinInfo}>
                         <Text style={[styles.gridCoinName, { color: colors.text }]} numberOfLines={1}>
                             {item.symbol.toUpperCase()}
@@ -197,7 +199,10 @@ export default function StatsScreen() {
                 </View>
 
                 <View style={styles.gridChartContainer}>
-                    <MiniChart data={sparklineData} isPositive={isPositive} />
+                    <MiniChart
+                        data={sparklineData}
+                        color={isPositive ? colors.chartPositive : colors.chartNegative}
+                    />
                 </View>
 
                 <View style={styles.gridPriceContainer}>
@@ -209,14 +214,14 @@ export default function StatsScreen() {
                             styles.gridPriceChange,
                             {
                                 backgroundColor: isPositive
-                                    ? 'rgba(76, 175, 80, 0.15)'
-                                    : 'rgba(244, 67, 54, 0.15)',
+                                    ? 'rgba(137, 168, 178, 0.15)' // #89A8B2
+                                    : 'rgba(224, 122, 95, 0.15)', // #E07A5F
                             },
                         ]}>
                         <Text
                             style={[
                                 styles.gridPriceChangeText,
-                                { color: isPositive ? '#4CAF50' : '#F44336' },
+                                { color: isPositive ? colors.chartPositive : colors.chartNegative },
                             ]}>
                             {formatPercentage(priceChange)}
                         </Text>
@@ -357,8 +362,14 @@ const styles = StyleSheet.create({
     gridHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: 8,
+    },
+    gridCoinImage: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        marginRight: 8,
     },
     gridCoinInfo: {
         flex: 1,

@@ -10,26 +10,30 @@ const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#C5705D', // Terracotta for primary text/accents
-    textSecondary: '#D0B8A8', // Darker Beige for secondary text
-    background: '#F8EDE3', // Light Beige
-    card: '#DFD3C3', // Beige
-    tint: '#C5705D', // Terracotta
-    icon: '#D0B8A8', // Darker Beige
-    tabIconDefault: '#D0B8A8',
-    tabIconSelected: '#C5705D',
-    border: '#D0B8A8',
+    text: '#2C3E50', // Dark gray for readability
+    textSecondary: '#89A8B2', // Primary Blue
+    background: '#F1F0E8', // Lightest
+    card: '#E5E1DA', // Beige/Gray
+    tint: '#89A8B2', // Primary Blue
+    icon: '#B3C8CF', // Light Blue
+    tabIconDefault: '#B3C8CF',
+    tabIconSelected: '#89A8B2',
+    border: '#B3C8CF',
+    chartPositive: '#89A8B2',
+    chartNegative: '#E07A5F', // Muted Orange/Red (Complementary)
   },
   dark: {
-    text: '#F8EDE3', // Light Beige for text on dark
-    textSecondary: '#D0B8A8',
-    background: '#1A1A1A', // Dark Grey/Brown
-    card: '#2C2C2C', // Slightly lighter dark
-    tint: '#C5705D', // Terracotta (keeps identity)
-    icon: '#A0A0A0',
+    text: '#F1F0E8', // Lightest
+    textSecondary: '#B3C8CF', // Light Blue
+    background: '#1A1A1A', // Dark
+    card: '#2C2C2C', // Dark Card
+    tint: '#89A8B2', // Primary Blue
+    icon: '#B3C8CF',
     tabIconDefault: '#666666',
-    tabIconSelected: '#C5705D',
+    tabIconSelected: '#89A8B2',
     border: '#444444',
+    chartPositive: '#89A8B2',
+    chartNegative: '#E07A5F',
   },
 };
 

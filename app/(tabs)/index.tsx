@@ -234,7 +234,6 @@ export default function HomeScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
 
-
   // Cargar sparkline solo cuando cambia a grid y no tenemos datos de sparkline
 
 
@@ -341,19 +340,19 @@ export default function HomeScreen() {
               styles.priceChangeContainer,
               {
                 backgroundColor: isPositive
-                  ? 'rgba(76, 175, 80, 0.15)'
-                  : 'rgba(244, 67, 54, 0.15)',
+                  ? 'rgba(137, 168, 178, 0.15)' // #89A8B2
+                  : 'rgba(224, 122, 95, 0.15)', // #E07A5F
               },
             ]}>
             <Ionicons
               name={isPositive ? 'trending-up' : 'trending-down'}
               size={14}
-              color={isPositive ? '#4CAF50' : '#F44336'}
+              color={isPositive ? colors.chartPositive : colors.chartNegative}
             />
             <Text
               style={[
                 styles.priceChange,
-                { color: isPositive ? '#4CAF50' : '#F44336' },
+                { color: isPositive ? colors.chartPositive : colors.chartNegative },
               ]}>
               {formatPercentage(priceChange)}
             </Text>
@@ -428,7 +427,7 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.gridPriceChange,
-                { color: isPositive ? '#4CAF50' : '#F44336' },
+                { color: isPositive ? colors.chartPositive : colors.chartNegative },
               ]}>
               {formatPercentage(priceChange)}
             </Text>
@@ -437,8 +436,6 @@ export default function HomeScreen() {
       </TouchableOpacity>
     );
   };
-
-
 
   // Renderizar estado de carga
   if (loading && coins.length === 0) {
@@ -542,11 +539,6 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-between', paddingHorizontal: 16 } : undefined}
       />
-      {loading && coins.length > 0 && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color={colors.tint} />
-        </View>
-      )}
     </SafeAreaView>
   );
 }

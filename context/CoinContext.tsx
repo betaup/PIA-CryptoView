@@ -37,10 +37,15 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchCoins = useCallback(async (forceRefresh = false) => {
         try {
             setError(null);
-            const endpoint = `/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=50&page=1&sparkline=false`;
-
             if (!forceRefresh) {
                 setLoading(true);
+            }
+
+            // Limitamos a 26 monedas para optimizar rendimiento
+            const perPage = 26;
+            const endpoint = `/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false`;
+
+            if (!forceRefresh) {
                 const cached = getCachedData(endpoint);
                 if (cached) {
                     setCoins(cached);
@@ -51,8 +56,8 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const data = await fetchWithBackoff(endpoint);
 
-            setCachedData(endpoint, data);
             setCoins(data);
+            setCachedData(endpoint, data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al cargar datos');
             console.error(err);
@@ -61,16 +66,24 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [currency]);
 
+    // Carga inicial
     useEffect(() => {
-        fetchCoins();
-    }, [fetchCoins]);
+        fetchCoins(false);
+    }, [currency, fetchCoins]);
 
     const refreshCoins = async () => {
         await fetchCoins(true);
     };
 
     return (
-        <CoinContext.Provider value={{ coins, loading, error, currency, setCurrency, refreshCoins }}>
+        <CoinContext.Provider value={{
+            coins,
+            loading,
+            error,
+            currency,
+            setCurrency,
+            refreshCoins,
+        }}>
             {children}
         </CoinContext.Provider>
     );

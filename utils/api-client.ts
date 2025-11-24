@@ -1,4 +1,5 @@
 const BASE_URL = 'https://api.coingecko.com/api/v3';
+const API_KEY = process.env.EXPO_PUBLIC_COINGECKO_API_KEY || '';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -17,7 +18,14 @@ export const fetchWithBackoff = async <T = any>(endpoint: string, options: Reque
 
     try {
         const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
-        const response = await fetch(url, options);
+
+        // Añadir API Key a los headers
+        const headers = {
+            ...options.headers,
+            'x-cg-demo-api-key': API_KEY,
+        };
+
+        const response = await fetch(url, { ...options, headers });
 
         if (response.status === 429) {
             // Actualizar el tiempo de reinicio global

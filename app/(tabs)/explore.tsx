@@ -230,7 +230,7 @@ export default function FavoritesScreen() {
             <Text
               style={[
                 styles.gridPriceChange,
-                { color: isPositive ? '#4CAF50' : '#F44336' },
+                { color: isPositive ? colors.chartPositive : colors.chartNegative },
               ]}>
               {formatPercentage(priceChange)}
             </Text>
