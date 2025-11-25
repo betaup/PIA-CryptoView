@@ -4,8 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { CoinProvider } from '@/context/CoinContext';
+import { ConfirmationProvider } from '@/context/ConfirmationContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { AppThemeProvider } from '@/context/ThemeContext';
+import { ToastProvider } from '@/context/ToastContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -30,11 +32,15 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <AppThemeProvider>
-      <FavoritesProvider>
-        <CoinProvider>
-          <RootLayoutContent />
-        </CoinProvider>
-      </FavoritesProvider>
+      <ToastProvider>
+        <ConfirmationProvider>
+          <FavoritesProvider>
+            <CoinProvider>
+              <RootLayoutContent />
+            </CoinProvider>
+          </FavoritesProvider>
+        </ConfirmationProvider>
+      </ToastProvider>
     </AppThemeProvider>
   );
 }

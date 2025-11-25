@@ -1,3 +1,5 @@
+import { useConfirmation } from '@/context/ConfirmationContext';
+import { useToast } from '@/context/ToastContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
 
@@ -20,6 +22,8 @@ export const FavoritesContext = createContext<FavoritesContextType>({
 export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
     const [favorites, setFavorites] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
+    const { showConfirmation } = useConfirmation();
 
     // Cargar favoritos al iniciar
     useEffect(() => {
@@ -39,24 +43,43 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
         loadFavorites();
     }, []);
 
+    const saveFavorites = async (newFavorites: string[]) => {
+        setFavorites(newFavorites);
+        try {
+            await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+        } catch (error) {
+            console.error('Error saving favorite:', error);
+        }
+    };
+
     const toggleFavorite = useCallback(async (coinId: string) => {
         try {
             const exists = favorites.includes(coinId);
 
-            const newFavorites = exists
-                ? favorites.filter((id) => id !== coinId)
-                : [...favorites, coinId];
-
-            setFavorites(newFavorites);
-
-            // Guardar en AsyncStorage
-            AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites)).catch((error) => {
-                console.error('Error saving favorite:', error);
-            });
+            if (exists) {
+                // Si ya existe, pedir confirmación para eliminar
+                showConfirmation({
+                    title: 'Eliminar de Favoritos',
+                    message: '¿Estás seguro de que quieres eliminar esta criptomoneda de tus favoritos?',
+                    confirmText: 'Eliminar',
+                    cancelText: 'Conservar',
+                    onConfirm: () => {
+                        const newFavorites = favorites.filter((id) => id !== coinId);
+                        saveFavorites(newFavorites);
+                        showToast('Eliminado de favoritos', 'info');
+                    },
+                });
+            } else {
+                // Si no existe, agregar directamente
+                const newFavorites = [...favorites, coinId];
+                saveFavorites(newFavorites);
+                showToast('Agregado a favoritos', 'success');
+            }
         } catch (error) {
             console.error('Error toggling favorite:', error);
+            showToast('Error al actualizar favoritos', 'error');
         }
-    }, [favorites]);
+    }, [favorites, showConfirmation, showToast]);
 
     const isFavorite = useCallback((coinId: string) => {
         return favorites.includes(coinId);
