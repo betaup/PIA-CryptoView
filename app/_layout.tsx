@@ -1,8 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
 import 'react-native-reanimated';
 
+import SplashScreen from '@/components/SplashScreen';
 import { CoinProvider } from '@/context/CoinContext';
 import { ConfirmationProvider } from '@/context/ConfirmationContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
@@ -30,6 +32,16 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  if (isSplashVisible) {
+    return (
+      <AppThemeProvider>
+        <SplashScreen onFinish={() => setIsSplashVisible(false)} />
+      </AppThemeProvider>
+    );
+  }
+
   return (
     <AppThemeProvider>
       <ToastProvider>
