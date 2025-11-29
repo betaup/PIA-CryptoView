@@ -1,50 +1,77 @@
-# Welcome to your Expo app 👋
+# CryptoView
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+CryptoView es una aplicación móvil para visualizar precios y estadísticas de criptomonedas en tiempo real.
 
-## Get started
+![Vista Previa](assets/images/preview.png)
 
-1. Install dependencies
+## Funcionamiento
 
-   ```bash
-   npm install
-   ```
+![Demo GIF](assets/images/Crypto%20View%20App.gif)
 
-2. Start the app
+## Demo
 
-   ```bash
-   npx expo start
-   ```
+Mira el funcionamiento de la aplicación en YouTube:
+[![Ver Demo en YouTube](https://img.youtube.com/vi/aD0DPj_sKTE/0.jpg)](https://youtube.com/shorts/aD0DPj_sKTE?si=hMADfADLxBG4TWVQ)
 
-In the output, you'll find options to open the app in a
+## Características (Features)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+*   **Modo Oscuro/Claro**: Adaptable a las preferencias del sistema o del usuario.
+*   **Conversión de Divisas**: Visualiza precios en USD, MXN y EUR.
+*   **Gráficos Interactivos**: Gráficos de línea para ver la tendencia de precios (24h, 7d, 30d).
+*   **Favoritos**: Guarda tus criptomonedas preferidas para un acceso rápido.
+*   **Búsqueda**: Encuentra fácilmente cualquier criptomoneda.
+*   **Datos en Tiempo Real**: Información actualizada gracias a la API de CoinGecko.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Configuración (Environment Variables)
 
-## Get a fresh project
+Para evitar límites en las peticiones a la API, es necesario configurar una API Key de CoinGecko.
 
-When you're ready, run:
+1.  Crea un archivo `.env` en la raíz del proyecto.
+2.  Agrega tu clave de API:
 
-```bash
-npm run reset-project
+    ```env
+    EXPO_PUBLIC_COINGECKO_API_KEY=tu_api_key_aqui
+    ```
+
+## Estructura del Proyecto
+
+```
+cryptoapp/
+├── app/                 # Rutas y pantallas de la aplicación (Expo Router)
+├── components/          # Componentes reutilizables de UI
+├── context/             # Estado global (Context API)
+├── hooks/               # Custom Hooks para lógica reutilizable
+├── utils/               # Funciones de utilidad y helpers
+├── constants/           # Constantes y configuración de tema
+└── assets/              # Imágenes y fuentes
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Instalación (APK)
 
-## Learn more
+Si deseas probar la aplicación directamente en un dispositivo Android sin instalar el entorno de desarrollo, puedes usar el archivo APK incluido en este repositorio.
 
-To learn more about developing your project with Expo, look at the following resources:
+*   **Ubicación**: `ejecutable android/cryptoviewapp.apk`
+*   **Instrucciones**: Transfiere el archivo a tu dispositivo Android e instálalo (asegúrate de permitir la instalación desde orígenes desconocidos).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Cómo probar el proyecto
 
-## Join the community
+Sigue estos pasos para ejecutar la aplicación:
 
-Join our community of developers creating universal apps.
+1.  **Instalar dependencias**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+    ```bash
+    npm install
+    ```
+
+2.  **Iniciar la aplicación**
+
+    ```bash
+    npx expo start
+    ```
+
+## Tecnologías
+
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![CoinGecko](https://img.shields.io/badge/CoinGecko-8BC34A?style=for-the-badge&logo=coingecko&logoColor=white)
