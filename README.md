@@ -1,3 +1,10 @@
+## Tecnologías
+
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![CoinGecko](https://img.shields.io/badge/CoinGecko-8BC34A?style=for-the-badge&logo=coingecko&logoColor=white)
+
 # CryptoView
 
 CryptoView es una aplicación móvil para visualizar precios y estadísticas de criptomonedas en tiempo real.
@@ -50,7 +57,7 @@ cryptoapp/
 
 Si deseas probar la aplicación directamente en un dispositivo Android sin instalar el entorno de desarrollo, puedes usar el archivo APK incluido en este repositorio.
 
-*   **Ubicación**: `ejecutable android/cryptoviewapp.apk`
+*   **Ubicación**: `ejecutable-android/cryptoviewapp.apk`
 *   **Instrucciones**: Transfiere el archivo a tu dispositivo Android e instálalo (asegúrate de permitir la instalación desde orígenes desconocidos).
 
 ## Cómo probar el proyecto
@@ -68,10 +75,3 @@ Sigue estos pasos para ejecutar la aplicación:
     ```bash
     npx expo start
     ```
-
-## Tecnologías
-
-![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![CoinGecko](https://img.shields.io/badge/CoinGecko-8BC34A?style=for-the-badge&logo=coingecko&logoColor=white)
