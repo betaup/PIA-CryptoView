@@ -28,7 +28,7 @@ const ToastItem = ({ id, message, type, onHide }: { id: string, message: string,
     const translateY = useRef(new Animated.Value(-20)).current;
 
     useEffect(() => {
-        // Entrada
+        // Animacion de entrada
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -43,7 +43,7 @@ const ToastItem = ({ id, message, type, onHide }: { id: string, message: string,
             }),
         ]).start();
 
-        // Auto-cierre
+        // Se cierra solo
         const timer = setTimeout(() => {
             handleHide();
         }, 3000);
@@ -80,7 +80,7 @@ const ToastItem = ({ id, message, type, onHide }: { id: string, message: string,
         switch (type) {
             case 'success': return colors.tint;
             case 'error': return colors.chartNegative;
-            default: return isDark ? colors.card : colors.text; // Oscuro en ambos modos para contraste con texto blanco
+            default: return isDark ? colors.card : colors.text; // Oscuro siempre para que se lea bien el texto blanco
         }
     };
 
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
         left: 20,
         right: 20,
         zIndex: 9999,
-        gap: 10, // Espacio entre toasts
+        gap: 10, // Espacio entre mensajes
     },
     toastItem: {
         padding: 16,

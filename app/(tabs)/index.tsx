@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Tipo para los datos de criptomoneda
+// Define que datos tiene una criptomoneda
 interface CryptoCoin {
   id: string;
   name: string;
@@ -39,7 +39,7 @@ interface CryptoCoin {
 type Currency = 'usd' | 'mxn' | 'eur';
 
 
-// Componente de gráfico simple
+// Muestra un grafico sencillo
 
 
 interface HeaderProps {
@@ -85,7 +85,7 @@ const Header = ({
       </View>
     </View>
 
-    {/* Buscador */}
+    {/* Barra de busqueda */}
     <View
       style={[
         styles.searchContainer,
@@ -119,7 +119,7 @@ const Header = ({
       )}
     </View>
 
-    {/* Selector de Moneda - Mejorado con mejor visibilidad */}
+    {/* Botones para elegir la moneda */}
     <View style={styles.currencySelector}>
       <TouchableOpacity
         style={[
@@ -227,17 +227,17 @@ export default function HomeScreen() {
   const { toggleFavorite, isFavorite } = useFavorites();
   const { coins, loading, error, currency, setCurrency, refreshCoins } = useCoins();
 
-  // Estados locales solo para UI
+  // Variables para controlar como se ve la pantalla
   const [filteredCoins, setFilteredCoins] = useState<CryptoCoin[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
 
-  // Cargar sparkline solo cuando cambia a grid y no tenemos datos de sparkline
+  // Carga el grafico pequeno si hace falta
 
 
-  // Filtrar monedas según búsqueda
+  // Busca monedas por nombre
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredCoins(coins);
@@ -252,19 +252,19 @@ export default function HomeScreen() {
     }
   }, [searchQuery, coins]);
 
-  // Función para pull-to-refresh
+  // Actualiza al deslizar hacia abajo
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshCoins();
     setRefreshing(false);
   }, [refreshCoins]);
 
-  // Función para cambiar moneda
+  // Cambia el tipo de moneda
   const handleCurrencyChange = (newCurrency: Currency) => {
     setCurrency(newCurrency);
   };
 
-  // Navegar a detalles
+  // Va a la pantalla de detalles
   const handleCoinPress = (coin: CryptoCoin) => {
     router.push({
       pathname: '/crypto-detail' as any,
@@ -277,7 +277,7 @@ export default function HomeScreen() {
     });
   };
 
-  // Renderizar tarjeta de criptomoneda (lista)
+  // Muestra cada moneda en una lista
   const renderCoinItem = ({ item }: { item: CryptoCoin }) => {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
@@ -362,7 +362,7 @@ export default function HomeScreen() {
     );
   };
 
-  // Renderizar tarjeta de criptomoneda (grid)
+  // Muestra cada moneda en una cuadricula
   const renderGridItem = ({ item, index }: { item: CryptoCoin; index: number }) => {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
@@ -437,7 +437,7 @@ export default function HomeScreen() {
     );
   };
 
-  // Renderizar estado de carga
+  // Muestra que esta cargando
   if (loading && coins.length === 0) {
     return (
       <SafeAreaView
@@ -464,7 +464,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Renderizar estado de error
+  // Muestra si hubo un error
   if (error && coins.length === 0) {
     return (
       <SafeAreaView
@@ -498,7 +498,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Renderizar lista o grid principal
+  // Muestra la lista o cuadricula de monedas
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}>
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Grid Styles
+  // Estilos para la cuadricula
   gridCard: {
     flex: 1,
     marginBottom: 16,

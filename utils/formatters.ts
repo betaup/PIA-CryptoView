@@ -1,8 +1,8 @@
 /**
- * Formatea un precio como moneda según la divisa especificada
- * @param price - Precio numérico a formatear
- * @param currency - Código de moneda ('usd', 'mxn', 'eur')
- * @returns String formateado con símbolo de moneda
+ * Convierte un numero a formato de dinero
+ * @param price - El precio en numeros
+ * @param currency - El tipo de moneda ('usd', 'mxn', 'eur')
+ * @returns El precio escrito como dinero
  */
 export const formatPrice = (price: number, currency: string): string => {
   const currencyMap: { [key: string]: string } = {
@@ -22,9 +22,9 @@ export const formatPrice = (price: number, currency: string): string => {
 };
 
 /**
- * Formatea un cambio porcentual con signo y color
- * @param percentage - Cambio porcentual numérico
- * @returns String formateado con signo + o -
+ * Escribe el porcentaje con signo mas o menos
+ * @param percentage - El numero del porcentaje
+ * @returns El porcentaje escrito con signo
  */
 export const formatPercentage = (percentage: number): string => {
   const sign = percentage >= 0 ? '+' : '';

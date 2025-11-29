@@ -21,7 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-// Tipo para los datos de criptomoneda
+// Define que datos tiene una criptomoneda
 interface CryptoCoin {
     id: string;
     name: string;
@@ -40,7 +40,7 @@ type Currency = 'usd' | 'mxn' | 'eur';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16px padding each side + 16px gap
 
-// Componente de gráfico simple
+// Muestra un grafico sencillo
 const MiniChart = ({ data, color }: { data: number[]; color: string }) => {
     if (!data || data.length === 0) {
         return (
@@ -85,23 +85,23 @@ export default function StatsScreen() {
     const router = useRouter();
     const { toggleFavorite, isFavorite } = useFavorites();
 
-    // Estados
+    // Variables que guardan informacion de la pantalla
     const [coins, setCoins] = useState<CryptoCoin[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [currency, setCurrency] = useState<Currency>('usd');
     const [refreshing, setRefreshing] = useState<boolean>(false);
 
-    // Función para obtener datos de la API
+    // Busca la informacion en internet
     const fetchCoins = useCallback(async (vsCurrency: Currency = 'usd', forceRefresh: boolean = false) => {
         try {
             setError(null);
 
             const endpoint = `/coins/markets?vs_currency=${vsCurrency}&order=market_cap_desc&per_page=26&page=1&sparkline=true`;
 
-            // Verificar caché primero (solo si no es un refresh forzado)
+            // Busca datos guardados antes de preguntar a internet
             if (!forceRefresh) {
-                const cachedData = getCachedData(endpoint); // Siempre pedimos sparkline
+                const cachedData = getCachedData(endpoint); // Siempre pedimos el grafico pequeno
                 if (cachedData) {
                     setCoins(cachedData);
                     setLoading(false);
@@ -110,10 +110,10 @@ export default function StatsScreen() {
                 }
             }
 
-            // Siempre pedimos sparkline en esta vista
+            // Siempre pedimos el grafico pequeno aqui
             const data = await fetchWithBackoff(endpoint);
 
-            // Guardar en caché
+            // Guarda la informacion para usarla despues
             setCachedData(endpoint, data);
 
             setCoins(data);
@@ -126,24 +126,24 @@ export default function StatsScreen() {
         }
     }, []);
 
-    // Cargar datos al montar el componente o cambiar moneda
+    // Carga los datos al iniciar o cambiar moneda
     useEffect(() => {
         fetchCoins(currency);
     }, [currency, fetchCoins]);
 
-    // Función para pull-to-refresh
+    // Actualiza al deslizar hacia abajo
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchCoins(currency, true); // forceRefresh = true
     }, [currency, fetchCoins]);
 
-    // Función para cambiar moneda
+    // Cambia el tipo de moneda
     const handleCurrencyChange = (newCurrency: Currency) => {
         setCurrency(newCurrency);
         setLoading(true);
     };
 
-    // Navegar a detalles
+    // Va a la pantalla de detalles
     const handleCoinPress = (coin: CryptoCoin) => {
         router.push({
             pathname: '/crypto-detail' as any,
@@ -156,7 +156,7 @@ export default function StatsScreen() {
         });
     };
 
-    // Renderizar tarjeta de criptomoneda (grid)
+    // Muestra cada moneda en una cuadricula
     const renderGridItem = ({ item }: { item: CryptoCoin }) => {
         const priceChange = item.price_change_percentage_24h || 0;
         const isPositive = priceChange >= 0;
@@ -240,7 +240,7 @@ export default function StatsScreen() {
                 Visión general del mercado
             </Text>
 
-            {/* Selector de Moneda */}
+            {/* Botones para elegir la moneda */}
             <View style={styles.currencySelector}>
                 {(['usd', 'mxn', 'eur'] as Currency[]).map((curr) => (
                     <TouchableOpacity

@@ -14,7 +14,7 @@ export default function TabLayout() {
   const colors = Colors[colorScheme ?? 'light'];
   const activeColor = colors.tabIconSelected;
   const inactiveColor = colors.tabIconDefault;
-  const backgroundColor = colors.card; // Use card color for tab bar background
+  const backgroundColor = colors.card; // Usa el color de la tarjeta para el fondo de la barra de pestanas
 
   const renderTabIcon = (name: keyof typeof Ionicons.glyphMap, focused: boolean) => (
     <View style={styles.iconContainer}>

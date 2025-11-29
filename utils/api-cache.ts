@@ -1,6 +1,6 @@
 /**
- * Sistema de caché simple para las peticiones de la API
- * Evita hacer peticiones repetidas en un corto período de tiempo
+ * Sistema para guardar datos temporalmente
+ * Evita pedir lo mismo muchas veces seguidas
  */
 
 interface CacheEntry {
@@ -14,7 +14,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 const cache: Map<string, CacheEntry> = new Map();
 
 /**
- * Obtiene datos del caché si están disponibles y no han expirado
+ * Obtiene los datos guardados si aun sirven
  */
 export const getCachedData = (key: string): any | null => {
   const entry = cache.get(key);
@@ -35,19 +35,19 @@ export const getCachedData = (key: string): any | null => {
 };
 
 /**
- * Guarda datos en el caché
+ * Guarda los datos para usarlos luego
  */
 export const setCachedData = (key: string, data: any): void => {
   cache.set(key, {
     data,
     timestamp: Date.now(),
-    currency: '', // Deprecated but kept for interface compat if needed internally
-    includeSparkline: false, // Deprecated
+    currency: '', // Ya no se usa pero se mantiene por si acaso
+    includeSparkline: false, // Obsoleto
   });
 };
 
 /**
- * Limpia el caché
+ * Borra todo lo guardado
  */
 export const clearCache = (): void => {
   cache.clear();

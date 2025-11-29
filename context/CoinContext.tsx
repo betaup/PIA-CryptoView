@@ -41,7 +41,7 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setLoading(true);
             }
 
-            // Limitamos a 26 monedas para optimizar rendimiento
+            // Limitamos a 26 monedas para que la app sea mas rapida
             const perPage = 26;
             const endpoint = `/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false`;
 

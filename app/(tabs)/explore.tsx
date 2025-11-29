@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Tipo para los datos de criptomoneda
+// Define que datos tiene una criptomoneda
 interface CryptoCoin {
   id: string;
   name: string;
@@ -39,7 +39,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const { favorites, loading: favoritesLoading, toggleFavorite, isFavorite } = useFavorites();
 
-  // Estados
+  // Variables que guardan informacion de la pantalla
   const [favoriteCoins, setFavoriteCoins] = useState<CryptoCoin[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export default function FavoritesScreen() {
 
 
 
-  // Función para obtener datos de las criptomonedas favoritas
+  // Busca la informacion de las monedas favoritas
   const fetchFavoriteCoins = useCallback(async (vsCurrency: Currency = 'usd', forceRefresh: boolean = false) => {
     if (favorites.length === 0) {
       setFavoriteCoins([]);
@@ -62,7 +62,7 @@ export default function FavoritesScreen() {
       setError(null);
       setLoading(true);
 
-      // Validar que hay favoritos válidos
+      // Revisa si hay favoritos validos
       const validFavorites = favorites.filter(id => id && id.trim() !== '');
       if (validFavorites.length === 0) {
         setFavoriteCoins([]);
@@ -71,12 +71,11 @@ export default function FavoritesScreen() {
         return;
       }
 
-      // Crear clave de caché única para favoritos
-      // Crear endpoint único para favoritos
+      // Crea una direccion unica para buscar los favoritos
       const ids = validFavorites.join(',');
       const endpoint = `/coins/markets?vs_currency=${vsCurrency}&ids=${ids}&order=market_cap_desc&sparkline=false`;
 
-      // Verificar caché primero (solo si no es un refresh forzado)
+      // Busca datos guardados antes de preguntar a internet
       if (!forceRefresh) {
         const cachedData = getCachedData(endpoint);
         if (cachedData) {
@@ -89,19 +88,19 @@ export default function FavoritesScreen() {
 
       const data = await fetchWithBackoff(endpoint);
 
-      // Validar que la respuesta es un array
+      // Revisa que la respuesta sea una lista
       if (!Array.isArray(data)) {
         console.warn('API returned non-array data:', data);
         setFavoriteCoins([]);
         return;
       }
 
-      // Mantener el orden de favoritos y filtrar solo los que existen
+      // Ordena los favoritos y quita los que no existen
       const orderedData = validFavorites
         .map((id) => data.find((coin: CryptoCoin) => coin && coin.id === id))
         .filter((coin) => coin !== undefined && coin !== null);
 
-      // Guardar en caché
+      // Guarda la informacion para usarla despues
       setCachedData(endpoint, orderedData);
 
       setFavoriteCoins(orderedData);
@@ -111,18 +110,17 @@ export default function FavoritesScreen() {
         : 'Error desconocido al cargar favoritos';
       setError(errorMessage);
       console.error('Error fetching favorite coins:', err);
-      // No limpiar los favoritos existentes si hay un error de red
-      // Solo mostrar el error
+      // Si falla internet no borra lo que ya teniamos
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [favorites]);
 
-  // Cargar datos cuando cambian los favoritos o la moneda
+  // Actualiza cuando cambian los favoritos o la moneda
   useEffect(() => {
     if (!favoritesLoading && favorites.length > 0) {
-      // Agregar un delay más largo para evitar rate limiting
+      // Espera un poco para no saturar la conexion
       const timer = setTimeout(() => {
         fetchFavoriteCoins(currency);
       }, 1000);
@@ -133,11 +131,11 @@ export default function FavoritesScreen() {
     }
   }, [favorites, currency, favoritesLoading, fetchFavoriteCoins]);
 
-  // Recargar cuando la pantalla se enfoca (con throttling más agresivo)
+  // Actualiza cuando entras a esta pantalla
   useFocusEffect(
     useCallback(() => {
       if (!favoritesLoading && favorites.length > 0) {
-        // Solo recargar si han pasado al menos 3 segundos desde la última carga
+        // Solo actualiza si paso un tiempo desde la ultima vez
         const timer = setTimeout(() => {
           fetchFavoriteCoins(currency);
         }, 2000);
@@ -146,13 +144,13 @@ export default function FavoritesScreen() {
     }, [favorites, currency, favoritesLoading, fetchFavoriteCoins])
   );
 
-  // Función para pull-to-refresh
+  // Actualiza al deslizar hacia abajo
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchFavoriteCoins(currency, true); // forceRefresh = true
   }, [currency, fetchFavoriteCoins]);
 
-  // Navegar a detalles
+  // Va a la pantalla de detalles
   const handleCoinPress = (coin: CryptoCoin) => {
     router.push({
       pathname: '/crypto-detail' as any,
@@ -165,7 +163,7 @@ export default function FavoritesScreen() {
     });
   };
 
-  // Renderizar tarjeta de criptomoneda (grid)
+  // Muestra cada moneda en forma de tarjeta
   const renderGridItem = ({ item }: { item: CryptoCoin }) => {
     const priceChange = item.price_change_percentage_24h || 0;
     const isPositive = priceChange >= 0;
@@ -240,7 +238,7 @@ export default function FavoritesScreen() {
     );
   };
 
-  // Renderizar header
+  // Muestra el titulo de la pantalla
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <Text style={[styles.title, { color: colors.text }]}>
@@ -250,7 +248,7 @@ export default function FavoritesScreen() {
         {favoriteCoins.length} {favoriteCoins.length === 1 ? 'criptomoneda' : 'criptomonedas'}
       </Text>
 
-      {/* Selector de Moneda - Mejorado con mejor visibilidad */}
+      {/* Botones para elegir la moneda */}
       <View style={styles.currencySelector}>
         <TouchableOpacity
           style={[
@@ -366,7 +364,7 @@ export default function FavoritesScreen() {
     </View>
   );
 
-  // Renderizar estado de carga
+  // Muestra que esta cargando
   if ((loading || favoritesLoading) && favoriteCoins.length === 0) {
     return (
       <SafeAreaView
@@ -385,7 +383,7 @@ export default function FavoritesScreen() {
     );
   }
 
-  // Renderizar estado vacío
+  // Muestra si no hay favoritos
   if (favorites.length === 0) {
     return (
       <SafeAreaView
@@ -407,7 +405,7 @@ export default function FavoritesScreen() {
     );
   }
 
-  // Renderizar estado de error (solo si no hay datos y no está cargando)
+  // Muestra si hubo un error
   if (error && favoriteCoins.length === 0 && !loading && !favoritesLoading) {
     return (
       <SafeAreaView
@@ -438,7 +436,7 @@ export default function FavoritesScreen() {
     );
   }
 
-  // Renderizar lista principal
+  // Muestra la lista de favoritos
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}>
@@ -527,7 +525,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 16,
   },
-  // Grid Styles
+  // Estilos para la cuadricula
   gridCard: {
     flex: 1,
     marginBottom: 16,

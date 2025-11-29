@@ -48,9 +48,9 @@ type ChartInterval = '24H' | '7D' | '1M';
 
 const { width } = Dimensions.get('window');
 
-// Componente de gráfico de línea
+// Componente para mostrar el grafico de linea
 
-// Componente de gráfico de línea mejorado
+// Version mejorada del componente del grafico
 const PriceChart = ({
   data,
   color
@@ -72,7 +72,7 @@ const PriceChart = ({
   const maxPrice = Math.max(...data);
   const priceRange = maxPrice - minPrice || 1;
 
-  // Puntos del gráfico
+  // Calcula las coordenadas de los puntos en el grafico
   const points = data.map((price, index) => {
     const x = (index / (data.length - 1)) * chartWidth;
     const y = paddingVertical + contentHeight - ((price - minPrice) / priceRange) * contentHeight;
@@ -85,7 +85,7 @@ const PriceChart = ({
 
   const fillPath = `${pathData} L ${chartWidth},${chartHeight} L 0,${chartHeight} Z`;
 
-  // Líneas de la cuadrícula (5 líneas horizontales)
+  // Crea las lineas horizontales de fondo para la cuadricula
   const gridLines = Array.from({ length: 5 }).map((_, i) => {
     const y = paddingVertical + (contentHeight / 4) * i;
     return (
@@ -116,18 +116,18 @@ const PriceChart = ({
           </LinearGradient>
         </Defs>
 
-        {/* Cuadrícula */}
+        {/* Dibuja la cuadricula */}
         <G>
           {gridLines}
         </G>
 
-        {/* Área sombreada */}
+        {/* Dibuja el area sombreada bajo la linea */}
         <Path
           d={fillPath}
           fill="url(#gradient)"
         />
 
-        {/* Línea del gráfico */}
+        {/* Dibuja la linea principal del grafico */}
         <Path
           d={pathData}
           fill="none"
@@ -214,7 +214,7 @@ export default function CryptoDetailScreen() {
       setChartData(prices);
     } catch (err) {
       console.error('Error fetching chart data:', err);
-      // Fallback to sparkline if available and interval is 7D (closest match to sparkline_7d)
+      // Si falla, usa datos guardados si el intervalo es de 7 dias
       if (interval === '7D' && coinDetail?.market_data.sparkline_7d?.price) {
         setChartData(coinDetail.market_data.sparkline_7d.price);
       }
@@ -224,8 +224,7 @@ export default function CryptoDetailScreen() {
   };
 
   const priceChange24h = coinDetail?.market_data.price_change_percentage_24h || 0;
-  // Calcular cambio para el intervalo seleccionado si es posible, por ahora usamos 24h para color base
-  // pero idealmente calcularíamos el cambio del gráfico.
+  // Calcula si el precio subio o bajo para elegir el color
   const chartIsPositive = chartData.length > 0
     ? chartData[chartData.length - 1] >= chartData[0]
     : priceChange24h >= 0;
@@ -295,7 +294,7 @@ export default function CryptoDetailScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* Encabezado de la pantalla */}
       <View style={[styles.header, { borderBottomColor: isDark ? '#333' : 'rgba(0,0,0,0.1)' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -322,7 +321,7 @@ export default function CryptoDetailScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}>
-        {/* Precio y Cambio */}
+        {/* Muestra el precio actual y cuanto cambio */}
         <View style={styles.priceSection}>
           <Text style={[styles.priceText, { color: colors.text }]}>
             {formatPrice(currentPrice, currency)}
@@ -338,7 +337,7 @@ export default function CryptoDetailScreen() {
           </View>
         </View>
 
-        {/* Gráfico */}
+        {/* Muestra el grafico de precios */}
         <View style={styles.chartContainer}>
           {chartLoading ? (
             <View style={[styles.chartPlaceholder, { backgroundColor: 'transparent' }]}>
@@ -357,7 +356,7 @@ export default function CryptoDetailScreen() {
             </View>
           )}
 
-          {/* Controles del Gráfico */}
+          {/* Botones para cambiar el tiempo del grafico */}
           <View style={styles.chartControls}>
             {intervals.map((interval) => (
               <TouchableOpacity
@@ -391,7 +390,7 @@ export default function CryptoDetailScreen() {
           </View>
         </View>
 
-        {/* Estadísticas */}
+        {/* Seccion de estadisticas */}
         <View style={styles.statsSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Estadísticas
@@ -429,7 +428,7 @@ export default function CryptoDetailScreen() {
           </View>
         </View>
 
-        {/* Descripción */}
+        {/* Descripcion de la moneda */}
         {coinDetail.description?.en && (
           <View style={styles.descriptionSection}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>

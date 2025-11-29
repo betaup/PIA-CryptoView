@@ -8,7 +8,7 @@ interface ProgressiveBlurProps {
     height?: number | string;
     position?: 'top' | 'bottom';
     style?: ViewStyle;
-    intensity?: number; // Not used for gradient but kept for API compatibility if we switch
+    intensity?: number; // No se usa para el degradado pero se mantiene por compatibilidad
 }
 
 export function ProgressiveBlur({ height = 100, position = 'bottom', style }: ProgressiveBlurProps) {
@@ -16,8 +16,7 @@ export function ProgressiveBlur({ height = 100, position = 'bottom', style }: Pr
     const colors = Colors[colorScheme ?? 'light'];
     const backgroundColor = colors.background;
 
-    // Create a gradient from transparent to background color
-    // For bottom: transparent (top) -> background (bottom)
+    // Crea un degradado de transparente al color de fondo
     const gradientColors = (position === 'bottom'
         ? ['transparent', backgroundColor]
         : [backgroundColor, 'transparent']) as [string, string];

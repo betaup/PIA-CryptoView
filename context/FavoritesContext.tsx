@@ -25,7 +25,7 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
     const { showToast } = useToast();
     const { showConfirmation } = useConfirmation();
 
-    // Cargar favoritos al iniciar
+    // Carga los favoritos al iniciar la app
     useEffect(() => {
         const loadFavorites = async () => {
             try {
@@ -57,7 +57,7 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
             const exists = favorites.includes(coinId);
 
             if (exists) {
-                // Si ya existe, pedir confirmación para eliminar
+                // Si ya existe pregunta si quieres borrarlo
                 showConfirmation({
                     title: 'Eliminar de Favoritos',
                     message: '¿Estás seguro de que quieres eliminar esta criptomoneda de tus favoritos?',
@@ -70,7 +70,7 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
                     },
                 });
             } else {
-                // Si no existe, agregar directamente
+                // Si no existe lo agrega directamente
                 const newFavorites = [...favorites, coinId];
                 saveFavorites(newFavorites);
                 showToast('Agregado a favoritos', 'success');

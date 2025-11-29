@@ -27,7 +27,7 @@ export const AppThemeProvider = ({ children }: { children: ReactNode }) => {
     const [themeMode, setThemeMode] = useState<ThemeMode>('system');
     const [isLoading, setIsLoading] = useState(true);
 
-    // Cargar tema guardado
+    // Carga el tema guardado
     useEffect(() => {
         loadTheme();
     }, []);
@@ -62,7 +62,7 @@ export const AppThemeProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    // Determinar el esquema de color actual
+    // Decide que colores usar
     const currentScheme: ColorSchemeName =
         themeMode === 'system' ? deviceColorScheme : themeMode;
 

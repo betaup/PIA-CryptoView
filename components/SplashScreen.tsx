@@ -16,9 +16,9 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
     useEffect(() => {
-        // Secuencia de animación
+        // Secuencia de animacion
         Animated.sequence([
-            // 1. Aparecer (Fade In + Scale Up)
+            // 1. Aparecer
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 1,
@@ -34,7 +34,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             ]),
             // 2. Mantener un momento
             Animated.delay(1500),
-            // 3. Desaparecer (Fade Out)
+            // 3. Desaparecer
             Animated.timing(fadeAnim, {
                 toValue: 0,
                 duration: 500,
